@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Quiz 5 — Logistic Regression</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f7f6f3; color: #1a1a1a; font-size: 15px; line-height: 1.6; }
+  .page { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 0.3rem; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 2rem; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 2rem; flex-wrap: wrap; }
+  .tab { padding: 7px 18px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 13px; color: #555; font-weight: 500; transition: all 0.15s; }
+  .tab:hover { border-color: #aaa; }
+  .tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Answer cards */
+  .section-title { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin: 2rem 0 1rem; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+  .qcard { background: #fff; border-radius: 10px; border: 1px solid #e8e8e8; margin-bottom: 1.2rem; overflow: hidden; }
+  .qcard-head { background: #f9f8f6; padding: 10px 16px; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #e8e8e8; }
+  .qnum { background: #1a1a1a; color: #fff; font-size: 11px; font-weight: 600; border-radius: 5px; padding: 2px 8px; white-space: nowrap; flex-shrink: 0; margin-top: 1px; }
+  .qtext { font-size: 13px; color: #555; line-height: 1.5; }
+  .qcard-body { padding: 14px 16px; }
+  .alabel { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #aaa; margin-bottom: 8px; }
+  pre { background: #f4f3f0; border-radius: 7px; padding: 12px 14px; font-size: 12px; line-height: 1.65; overflow-x: auto; font-family: 'Consolas', 'Courier New', monospace; white-space: pre-wrap; word-break: break-word; }
+  .answer-box { margin-top: 10px; background: #eef6ee; border-left: 3px solid #3a8a3a; border-radius: 0 7px 7px 0; padding: 8px 12px; font-size: 13px; font-weight: 500; color: #1f5c1f; }
+  .insight { margin-top: 10px; background: #eff4ff; border-left: 3px solid #4472ca; border-radius: 0 7px 7px 0; padding: 8px 12px; font-size: 12.5px; color: #2c4a8a; }
+
+  /* Difficulty */
+  .diff-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .diff-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 10px; padding: 14px; text-align: center; }
+  .diff-num { font-size: 26px; font-weight: 700; }
+  .diff-lbl { font-size: 12px; color: #888; margin-top: 3px; }
+  .bar-row { margin-bottom: 12px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 4px; }
+  .bar-bg { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .verdict { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; font-size: 13.5px; line-height: 1.6; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Quiz 5 — Logistic Regression</h1>
+  <p class="subtitle">Employee Attrition · 完整答案 + 模拟题 A/B + 难度评估</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="show('ans')">Quiz 5 答案</button>
+    <button class="tab" onclick="show('mock1')">模拟题 A</button>
+    <button class="tab" onclick="show('mock2')">模拟题 B</button>
+    <button class="tab" onclick="show('diff')">难度评估</button>
+  </div>
+
+  <!-- ═══════════════ ANSWERS ═══════════════ -->
+  <div id="ans" class="panel active">
+
+    <div class="section-title">Part 1 · StatsModels — Q1 to Q12</div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q1</span><span class="qtext">Read in the data. Split 70/30 using DataFrame.sample(), random_state=617. What percentage of employees in the train sample left the company?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>import pandas as pd
+import numpy as np
+
+data = pd.read_csv('employee_attrition.csv')
+
+train = data.sample(frac=0.7, random_state=617)
+test  = data.drop(labels=train.index)
+
+pct = round(train['attrition'].mean() * 100, 2)
+print(pct)</pre>
+        <div class="answer-box">✅ 答案：20.7</div>
+        <div class="insight">📌 考点：用 DataFrame.sample() 做简单随机抽样，注意是 frac=0.7 而不是 train_size=0.7</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q2</span><span class="qtext">Compare employees who left vs stayed based on average age. What is the average age of employees who left?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>avg_age_by_attrition = train.groupby('attrition')['age'].mean()
+print(avg_age_by_attrition)
+
+# Or directly:
+print(round(train[train['attrition']==1]['age'].mean(), 2))</pre>
+        <div class="answer-box">✅ 答案：48.3</div>
+        <div class="insight">📌 离职员工平均年龄约 48.3 岁，高于未离职员工，提示年龄可能与离职正相关。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q3</span><span class="qtext">Fit model1 = logit('attrition ~ age'). Which conclusion is correct?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>from statsmodels.formula.api import logit
+
+model1 = logit('attrition ~ age', data=train).fit()
+print(model1.summary())</pre>
+        <div class="answer-box">✅ 答案：age 的系数为正（≈+0.013），p-value &lt; 0.05 → 年龄越大，离职概率越高，且效果显著</div>
+        <div class="insight">📌 考点：读 summary() 中系数的符号和 P&gt;|z| 值。正系数 + 显著 = 正向影响离职。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q4</span><span class="qtext">Based on model1, what is the predicted probability that the first person in the train sample will leave?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>first_person = train.iloc[[0]][['age']]
+prob = model1.predict(first_person)
+print(round(prob.values[0], 4))</pre>
+        <div class="answer-box">✅ 答案：0.2077（first person 年龄 = 48）</div>
+        <div class="insight">📌 用 .predict() 传入 DataFrame，注意 iloc[[0]] 保留二维结构。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q5</span><span class="qtext">Based on model1, what is the probability that a 60-year-old will leave?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>age_60 = pd.DataFrame({'age': [60]})
+prob_60 = model1.predict(age_60)
+print(round(prob_60.values[0], 4))</pre>
+        <div class="answer-box">✅ 答案：0.235</div>
+        <div class="insight">📌 新数据点预测：构造一个只有 age=60 的 DataFrame 传入 .predict()。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q6</span><span class="qtext">Based on model1, if age goes up by one year, what is the percent change in likelihood of leaving?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>import math
+pct_change = (math.exp(model1.params['age']) - 1) * 100
+print(round(pct_change, 2))</pre>
+        <div class="answer-box">✅ 答案：+1.33%（每增加 1 岁，离职可能性增加约 1.33%）</div>
+        <div class="insight">📌 核心公式：(exp(β) − 1) × 100。系数正 → 正变化 → 离职风险随年龄增加。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q7</span><span class="qtext">Examine attrition rate by gender. Which statement is true?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>attrition_by_gender = train.groupby('gender')['attrition'].mean() * 100
+print(attrition_by_gender.round(2))</pre>
+        <div class="answer-box">✅ 答案：Female 离职率 ≈ 24.17%，Male 离职率 ≈ 18.55% → 女性离职率更高</div>
+        <div class="insight">📌 用 groupby + mean() × 100 计算各组离职率。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q8</span><span class="qtext">Fit model2 = logit('attrition ~ gender'). What is the difference in likelihood of male vs female leaving?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>model2 = logit('attrition ~ gender', data=train).fit()
+print(model2.summary())
+
+# 男性 vs 女性的 odds ratio（女性为 baseline）
+odds_ratio = math.exp(model2.params['gender[T.Male]'])
+pct_diff = (odds_ratio - 1) * 100
+print(f"Odds ratio: {round(odds_ratio, 4)}")
+print(f"% difference: {round(pct_diff, 2)}%")</pre>
+        <div class="answer-box">✅ 答案：Male 系数 ≈ −0.336，Odds ratio ≈ 0.714 → 男性比女性离职可能性低约 28.55%</div>
+        <div class="insight">📌 女性为 baseline（字母排序先），Male 系数为负 → 男性离职风险更低，与 Q7 一致。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q9</span><span class="qtext">Fit model3 = logit('attrition ~ department'). Which statements are true?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>model3 = logit('attrition ~ department', data=train).fit()
+print(model3.summary())
+
+# Baseline = Human Resources（字母排序第一）
+# R&D 系数, Sales 系数
+for k, v in model3.params.items():
+    print(f"{k}: coef={round(v,4)}, odds_ratio={round(math.exp(v),4)}")</pre>
+        <div class="answer-box">✅ 答案：
+• Baseline = Human Resources
+• R&amp;D 系数 ≈ −0.315（odds ratio ≈ 0.73），R&amp;D 离职率低于 HR（但需看 p-value 是否显著）
+• Sales 系数 ≈ +0.036（odds ratio ≈ 1.04），Sales 与 HR 差异不显著</div>
+        <div class="insight">📌 StatsModels 自动设定字母排序最小的类别为 baseline。需看每个系数的 p-value 判断显著性。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q10</span><span class="qtext">Fit model4 with all variables. What is the Pseudo R-squared?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>model4 = logit(
+    'attrition ~ age + gender + department + years + performance + jobsat + income + distance',
+    data=train
+).fit()
+
+print(round(model4.prsquared, 4))
+# 或从 summary() 中读取 Pseudo R-squ.</pre>
+        <div class="answer-box">✅ 答案：≈ 0.3486</div>
+        <div class="insight">📌 McFadden Pseudo R² = 1 − (LL_fitted / LL_null)。0.35 属于较好的拟合（通常 &gt;0.2 即可接受）。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q11</span><span class="qtext">Based on model4, which variables have an effect on attrition? (Select one or more)</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>print(model4.summary())
+# 看每个变量的 P>|z| 列，p < 0.05 则显著</pre>
+        <div class="answer-box">✅ 显著变量（p &lt; 0.05）：years、performance、jobsat、gender（Male）
+❌ 不显著：income、distance、department（Sales）、age（边缘）</div>
+        <div class="insight">📌 p-value &lt; 0.05 才能认为该变量对 attrition 有显著影响。income 系数极小（≈0），没有实际作用。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q12</span><span class="qtext">Based on model4, what is the impact of a one-unit increase in jobsat on likelihood to leave?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>b_jobsat = model4.params['jobsat']
+impact = (math.exp(b_jobsat) - 1) * 100
+print(round(impact, 2))</pre>
+        <div class="answer-box">✅ 答案：−35.99%（jobsat 每提高 1 分，离职可能性降低约 36%）</div>
+        <div class="insight">📌 jobsat 系数 ≈ −0.446，负向显著。工作满意度越高，离职风险越低，符合直觉。</div>
+      </div>
+    </div>
+
+    <div class="section-title">Part 2 · Scikit-Learn — Q13 to Q19</div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q13</span><span class="qtext">Stratified split 80/20, random_state=617. What % of train left?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>from sklearn.model_selection import train_test_split
+
+y = data['attrition']
+X = data.drop('attrition', axis=1)
+
+X_train_raw, X_test_raw, y_train, y_test = train_test_split(
+    X, y, train_size=0.8, random_state=617, stratify=y)
+
+print(round(y_train.mean() * 100, 2))</pre>
+        <div class="answer-box">✅ 答案：20.52</div>
+        <div class="insight">📌 关键区别：stratify=y 保证 train/test 中 attrition 比例相同；Pandas .sample() 不保证这一点。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q14</span><span class="qtext">Dummy code gender and department (drop_first=True). Reindex test to train columns. What is the mean of dummy coded gender?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>cat_cols = ['gender', 'department']
+
+X_train = pd.get_dummies(X_train_raw, columns=cat_cols,
+                          drop_first=True, prefix_sep='_')
+X_test  = pd.get_dummies(X_test_raw,  columns=cat_cols,
+                          drop_first=True, prefix_sep='_')
+X_test  = X_test.reindex(columns=X_train.columns, fill_value=0)
+
+print(round(X_train['gender_Male'].mean(), 4))</pre>
+        <div class="answer-box">✅ 答案：0.6012（train 中约 60.12% 为男性）</div>
+        <div class="insight">📌 drop_first=True 后 gender 只保留 gender_Male（Female 为 baseline）。reindex 确保 test 列与 train 完全一致。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q15</span><span class="qtext">Fit LogisticRegression(max_iter=10000). What is the predicted value for the first observation in train?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>from sklearn.linear_model import LogisticRegression
+
+logit_sk = LogisticRegression(max_iter=10000, random_state=617)
+logit_sk.fit(X_train, y_train)
+
+y_pred_train = logit_sk.predict(X_train)
+print(y_pred_train[0])          # 预测类别：0 或 1
+
+y_pred_proba_train = logit_sk.predict_proba(X_train)
+print(y_pred_proba_train[0])    # [P(0), P(1)]</pre>
+        <div class="answer-box">✅ 答案：预测类别 = 0（不会离职），P(attrition=1) ≈ 0.006</div>
+        <div class="insight">📌 .predict() 返回类别，.predict_proba()[:,1] 返回正类概率。默认 threshold=0.5。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q16</span><span class="qtext">What is the Sensitivity (Recall) in the train sample?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>from sklearn.metrics import recall_score
+sensitivity_train = recall_score(y_train, y_pred_train)
+print(round(sensitivity_train, 4))</pre>
+        <div class="answer-box">✅ 答案：0.4932（即 49.32%）</div>
+        <div class="insight">📌 Sensitivity = Recall = TP / (TP + FN)。较低的 Sensitivity 说明模型漏掉了约一半真正会离职的员工。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q17</span><span class="qtext">What is the Sensitivity in the test sample?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>y_pred_test = logit_sk.predict(X_test)
+sensitivity_test = recall_score(y_test, y_pred_test)
+print(round(sensitivity_test, 4))</pre>
+        <div class="answer-box">✅ 答案：0.5234（即 52.34%）</div>
+        <div class="insight">📌 test Sensitivity 略高于 train，说明模型没有过拟合，泛化能力正常。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q18</span><span class="qtext">What is the AUC for the train sample?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>from sklearn.metrics import roc_auc_score
+y_pred_proba_train = logit_sk.predict_proba(X_train)
+auc_train = roc_auc_score(y_train, y_pred_proba_train[:,1])
+print(round(auc_train, 4))</pre>
+        <div class="answer-box">✅ 答案：0.8789</div>
+        <div class="insight">📌 AUC 接近 0.88，说明模型区分离职/留职能力很强（AUC=0.5 随机，=1.0 完美）。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">Q19</span><span class="qtext">What is the AUC for the test sample?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">CODE</div>
+<pre>y_pred_proba_test = logit_sk.predict_proba(X_test)
+auc_test = roc_auc_score(y_test, y_pred_proba_test[:,1])
+print(round(auc_test, 4))</pre>
+        <div class="answer-box">✅ 答案：0.8833</div>
+        <div class="insight">📌 test AUC ≈ train AUC，模型泛化良好。Sensitivity 低但 AUC 高 → 概率排序好，但 threshold=0.5 不是最优截断点。</div>
+      </div>
+    </div>
+
+  </div><!-- /answers -->
+
+  <!-- ═══════════════ MOCK A ═══════════════ -->
+  <div id="mock1" class="panel">
+    <div class="section-title">模拟题 A · 基于同类型题目重新设计</div>
+    <p style="font-size:13px;color:#666;margin-bottom:1.5rem;">数据集：customer_churn.csv（虚构），变量：age, gender, plan, tenure, usage, support_calls, monthly_charge, churn (0/1)</p>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A1</span><span class="qtext">Read in customer_churn.csv. Split 70/30 using DataFrame.sample(random_state=42). What percentage of customers in the train sample churned? (no % sign)</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>import pandas as pd
+data = pd.read_csv('customer_churn.csv')
+train = data.sample(frac=0.7, random_state=42)
+test  = data.drop(labels=train.index)
+print(round(train['churn'].mean() * 100, 2))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A2</span><span class="qtext">Compare average monthly_charge between customers who churned vs stayed. What is the average monthly_charge of customers who churned?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>print(round(train[train['churn']==1]['monthly_charge'].mean(), 2))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A3</span><span class="qtext">Fit model1 = logit('churn ~ monthly_charge'). Which conclusion is correct about the effect of monthly_charge?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>from statsmodels.formula.api import logit
+model1 = logit('churn ~ monthly_charge', data=train).fit()
+print(model1.summary())
+# 看系数符号和 P>|z|</pre>
+        <div class="insight">📌 若系数为正且显著 → monthly_charge 越高，客户越容易流失</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A4</span><span class="qtext">Based on model1, what is the predicted probability that the first customer in train will churn?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>first = train.iloc[[0]][['monthly_charge']]
+print(round(model1.predict(first).values[0], 4))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A5</span><span class="qtext">Based on model1, what is the probability of churn for a customer with monthly_charge = $80?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>new = pd.DataFrame({'monthly_charge': [80]})
+print(round(model1.predict(new).values[0], 4))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A6</span><span class="qtext">Based on model1, if monthly_charge increases by $1, what is the percent change in likelihood of churn?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>import math
+pct = (math.exp(model1.params['monthly_charge']) - 1) * 100
+print(round(pct, 2))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A7</span><span class="qtext">Examine churn rate by plan type. Which plan has the highest churn rate?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>print((train.groupby('plan')['churn'].mean() * 100).round(2))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A8</span><span class="qtext">Fit model2 = logit('churn ~ plan'). What is the odds ratio of the highest-churn plan vs the baseline?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>model2 = logit('churn ~ plan', data=train).fit()
+print(model2.summary())
+# odds ratio for each level:
+for k, v in model2.params.items():
+    if k != 'Intercept':
+        print(f"{k}: odds_ratio = {round(math.exp(v), 4)}")</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A9</span><span class="qtext">Fit model3 with all variables. What is the Pseudo R-squared?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>model3 = logit(
+    'churn ~ age + gender + plan + tenure + usage + support_calls + monthly_charge',
+    data=train
+).fit()
+print(round(model3.prsquared, 4))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A10</span><span class="qtext">Based on model3, what is the impact of a one-unit increase in support_calls on likelihood to churn?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>b = model3.params['support_calls']
+print(round((math.exp(b) - 1) * 100, 2))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A11</span><span class="qtext">[sklearn] Stratified split 80/20, random_state=42. Dummy code gender and plan (drop_first=True). Reindex test. Fit LogisticRegression(max_iter=10000). What is the AUC on the test sample?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+
+y = data['churn']
+X = data.drop('churn', axis=1)
+X_train_r, X_test_r, y_train, y_test = train_test_split(
+    X, y, train_size=0.8, random_state=42, stratify=y)
+
+cat_cols = ['gender', 'plan']
+X_train = pd.get_dummies(X_train_r, columns=cat_cols, drop_first=True)
+X_test  = pd.get_dummies(X_test_r,  columns=cat_cols, drop_first=True)
+X_test  = X_test.reindex(columns=X_train.columns, fill_value=0)
+
+clf = LogisticRegression(max_iter=10000)
+clf.fit(X_train, y_train)
+proba = clf.predict_proba(X_test)[:,1]
+print(round(roc_auc_score(y_test, proba), 4))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">A12</span><span class="qtext">[sklearn] What is the Sensitivity on the test sample? And why might it be more important than Accuracy for churn prediction?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>from sklearn.metrics import recall_score
+y_pred_test = clf.predict(X_test)
+print(round(recall_score(y_test, y_pred_test), 4))</pre>
+        <div class="insight">📌 理由：Churn 属于类别不平衡场景。错误地把将要流失的客户预测为留下（False Negative）代价最高，因为公司没有机会干预挽留。Sensitivity 衡量的正是"真正流失客户中被正确识别的比例"。</div>
+      </div>
+    </div>
+
+  </div><!-- /mock1 -->
+
+  <!-- ═══════════════ MOCK B ═══════════════ -->
+  <div id="mock2" class="panel">
+    <div class="section-title">模拟题 B · 进阶版（更接近期末考试风格）</div>
+    <p style="font-size:13px;color:#666;margin-bottom:1.5rem;">数据集：loan_default.csv，变量：age, education, loan_amount, credit_score, employment_type, income, num_accounts, default (0/1)</p>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B1</span><span class="qtext">Read loan_default.csv. Split 75/25 using DataFrame.sample(random_state=99). What percentage defaulted in train? What percentage defaulted in test? Are the rates similar?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>data = pd.read_csv('loan_default.csv')
+train = data.sample(frac=0.75, random_state=99)
+test  = data.drop(labels=train.index)
+print("Train default rate:", round(train['default'].mean()*100, 2))
+print("Test  default rate:", round(test['default'].mean()*100, 2))
+# 注意：Pandas .sample() 不保证分层，两者可能略有不同</pre>
+        <div class="insight">📌 此题考察对 simple random sampling vs stratified sampling 区别的理解。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B2</span><span class="qtext">Fit model1 = logit('default ~ credit_score'). Interpret the coefficient: what does it mean for default risk?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>model1 = logit('default ~ credit_score', data=train).fit()
+print(model1.summary())
+b = model1.params['credit_score']
+pct = (math.exp(b) - 1) * 100
+print(f"1-unit increase in credit_score changes default odds by {round(pct,2)}%")</pre>
+        <div class="insight">📌 预期：信用分越高，违约可能性越低 → 系数为负。考察 interpretation of negative coefficient。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B3</span><span class="qtext">Fit model2 = logit('default ~ employment_type'). What is the baseline category? Which employment type has the highest default risk?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>model2 = logit('default ~ employment_type', data=train).fit()
+print(model2.summary())
+# Baseline = 字母排序最小的类别
+# 最高风险 = 截距 + 系数最大的那个</pre>
+        <div class="insight">📌 考察类别变量的 baseline 设定规则和 odds ratio 比较。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B4</span><span class="qtext">Fit model3 with all variables. Compare AIC and Pseudo R² across model1, model2, model3. Which model is best? Why?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>model3 = logit(
+    'default ~ age + education + loan_amount + credit_score + employment_type + income + num_accounts',
+    data=train
+).fit()
+
+comparison = pd.DataFrame({
+    'model1': [model1.aic, model1.prsquared],
+    'model2': [model2.aic, model2.prsquared],
+    'model3': [model3.aic, model3.prsquared],
+    'metric': ['AIC', 'Pseudo_R2']
+}).set_index('metric')
+print(comparison)</pre>
+        <div class="insight">📌 考察 AIC（越小越好）和 Pseudo R²（越大越好）的综合判断。全变量模型通常最优，但要注意 overfitting。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B5</span><span class="qtext">Based on model3, what is the predicted probability of default for a 35-year-old with credit_score=650, income=60000, loan_amount=15000, employment_type='Employed', education='Bachelor', num_accounts=3?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>new_person = pd.DataFrame({
+    'age': [35],
+    'education': ['Bachelor'],
+    'loan_amount': [15000],
+    'credit_score': [650],
+    'employment_type': ['Employed'],
+    'income': [60000],
+    'num_accounts': [3]
+})
+prob = model3.predict(new_person)
+print(round(prob.values[0], 4))</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B6</span><span class="qtext">[sklearn] Using stratified 80/20 split (random_state=99): dummy code education and employment_type. Fit logistic regression. Produce a confusion matrix. Calculate Accuracy, Precision, Sensitivity, and AUC for the TEST sample.</span></div>
+      <div class="qcard-body">
+        <div class="alabel">ANSWER TEMPLATE</div>
+<pre>from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (confusion_matrix, accuracy_score,
+                              precision_score, recall_score, roc_auc_score)
+
+y = data['default']
+X = data.drop('default', axis=1)
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, train_size=0.8,
+                                            random_state=99, stratify=y)
+cat_cols = ['education', 'employment_type']
+X_tr = pd.get_dummies(X_tr, columns=cat_cols, drop_first=True)
+X_te = pd.get_dummies(X_te, columns=cat_cols, drop_first=True)
+X_te = X_te.reindex(columns=X_tr.columns, fill_value=0)
+
+clf = LogisticRegression(max_iter=10000)
+clf.fit(X_tr, y_tr)
+y_pred = clf.predict(X_te)
+y_proba = clf.predict_proba(X_te)[:,1]
+
+print("Confusion Matrix:\n", confusion_matrix(y_te, y_pred))
+print(f"Accuracy:    {round(accuracy_score(y_te, y_pred), 4)}")
+print(f"Precision:   {round(precision_score(y_te, y_pred), 4)}")
+print(f"Sensitivity: {round(recall_score(y_te, y_pred), 4)}")
+print(f"AUC:         {round(roc_auc_score(y_te, y_proba), 4)}")</pre>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B7</span><span class="qtext">[Conceptual] The dataset has 95% non-default and 5% default. A naive model that always predicts "no default" has 95% accuracy. Explain why this is misleading and which metric should be prioritized.</span></div>
+      <div class="qcard-body">
+        <div class="alabel">概念题答案框架</div>
+<pre># 这是一个 Class Imbalance 问题。
+# 解释：
+# 1. Accuracy 被多数类主导 → 95% 准确但完全没有预测价值
+# 2. 关键错误是 False Negatives（把违约客户预测为不违约）
+#    → 银行会蒙受实际损失
+# 3. 应优先看：
+#    - Sensitivity/Recall：真正违约中被识别的比例
+#    - AUC：不依赖阈值，综合衡量模型区分能力
+#    - Precision-Recall curve：在 imbalanced 数据中比 ROC 更信息量大</pre>
+        <div class="insight">📌 这类概念题在期末考试中经常出现！记住：Imbalance → Accuracy 失效 → 用 Sensitivity/AUC。</div>
+      </div>
+    </div>
+
+    <div class="qcard">
+      <div class="qcard-head"><span class="qnum">B8</span><span class="qtext">[Conceptual] Compare StatsModels logit vs sklearn LogisticRegression. When would you use each?</span></div>
+      <div class="qcard-body">
+        <div class="alabel">概念题答案框架</div>
+<pre># StatsModels logit:
+# ✅ 需要统计推断（p-value, 置信区间, 系数显著性检验）
+# ✅ 需要解释"哪些变量显著影响结果"
+# ✅ 研究/学术场景
+# ✅ 自动处理类别变量（公式语法）
+
+# Sklearn LogisticRegression:
+# ✅ 机器学习/预测场景
+# ✅ 需要 Confusion Matrix, Precision, Recall, AUC
+# ✅ Pipeline 集成（与特征工程、交叉验证配合）
+# ⚠️ 需要手动 get_dummies + reindex 处理类别变量
+# ⚠️ 默认有 L2 正则化（C=1.0），会影响系数大小</pre>
+      </div>
+    </div>
+
+  </div><!-- /mock2 -->
+
+  <!-- ═══════════════ DIFFICULTY ═══════════════ -->
+  <div id="diff" class="panel">
+    <div class="section-title">难度评估</div>
+
+    <div class="diff-grid">
+      <div class="diff-card"><div class="diff-num" style="color:#3a8a3a;">★★★</div><div class="diff-lbl">整体难度</div></div>
+      <div class="diff-card"><div class="diff-num">19</div><div class="diff-lbl">题目总数</div></div>
+      <div class="diff-card"><div class="diff-num">12</div><div class="diff-lbl">StatsModels 题</div></div>
+      <div class="diff-card"><div class="diff-num">7</div><div class="diff-lbl">Sklearn 题</div></div>
+    </div>
+
+    <div class="bar-row">
+      <div class="bar-label"><span>数据处理 / 分割</span><span>★★☆ 中等</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:55%;background:#4472ca;"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>模型建立（公式语法）</span><span>★★☆ 中等</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:50%;background:#4472ca;"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>系数解读（exp变换）</span><span>★★★ 较难</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:75%;background:#e05c5c;"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>Dummy coding + reindex</span><span>★★★ 较难</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:70%;background:#e05c5c;"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>性能指标（Sensitivity/AUC）</span><span>★★☆ 中等</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:55%;background:#4472ca;"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span>概念理解（为何用该指标）</span><span>★★★ 较难</span></div>
+      <div class="bar-bg"><div class="bar-fill" style="width:65%;background:#e05c5c;"></div></div>
+    </div>
+
+    <div class="verdict">
+      <strong>综合评价：中等偏难（★★★/5）</strong><br><br>
+      <strong>简单部分（★★）：</strong>数据读取分割、groupby 探索、.predict() 预测概率——只要熟悉课件代码就能做对。<br><br>
+      <strong>中等部分（★★★）：</strong>理解 StatsModels 两个库的分工差异、类别变量的 baseline 判断、stratify 参数的作用。<br><br>
+      <strong>难点（★★★★）：</strong>
+      (1) <code>(exp(β)−1)×100</code> 的系数解读，容易忘记这一步；
+      (2) Sklearn 的 get_dummies + reindex 流程，顺序和参数容易出错；
+      (3) 理解 Sensitivity 低但 AUC 高的矛盾现象（说明 threshold=0.5 不是最优）。<br><br>
+      <strong>备考建议：</strong>重点背熟两个系数解读公式；每次 dummy 之后一定记得 reindex test；Sensitivity vs AUC 的区别是论述题高频考点。
+    </div>
+  </div><!-- /diff -->
+
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
